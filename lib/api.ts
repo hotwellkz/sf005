@@ -1,3 +1,5 @@
+import type { RankingApiResponse } from "./types";
+
 function getApiBase(): string {
   if (typeof window !== "undefined") return window.location.origin;
   return "";
@@ -9,9 +11,22 @@ function getDateParam(date?: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function getTopStocks(date?: string, asset: "stock" | "etf" = "stock") {
+export type GetTopStocksOptions = {
+  date?: string;
+  asset?: "stock" | "etf";
+  buyTrackRecord?: boolean;
+  sellTrackRecord?: boolean;
+};
+
+export async function getTopStocks(
+  date?: string,
+  asset: "stock" | "etf" = "stock",
+  options?: { buyTrackRecord?: boolean; sellTrackRecord?: boolean }
+) {
   const dateStr = getDateParam(date);
   const params = new URLSearchParams({ date: dateStr, asset });
+  if (options?.buyTrackRecord) params.set("buy_track_record", "1");
+  if (options?.sellTrackRecord) params.set("sell_track_record", "1");
   const res = await fetch(`${getApiBase()}/api/ranking?${params}`);
   if (!res.ok) throw new Error("Failed to fetch ranking");
   const data: RankingApiResponse = await res.json();
@@ -59,4 +74,4 @@ export async function getIndustryScores(slug: string) {
   return res.json();
 }
 
-export type { RankingApiResponse } from "./types";
+export type { RankingApiResponse };

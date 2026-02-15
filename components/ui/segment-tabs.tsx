@@ -7,8 +7,8 @@ const TABS: { id: string; label: string; icon?: React.ComponentType<{ className?
   { id: "stocks", label: "Top Stocks", icon: TrendingUp },
   { id: "etfs", label: "ETFs", icon: BarChart2 },
   { id: "trade-ideas", label: "Trade Ideas", icon: Lightbulb },
-  { id: "sectors", label: "Sectors", icon: LayoutGrid },
-  { id: "industries", label: "Industries", icon: Factory },
+  { id: "sectors", label: "Groups", icon: LayoutGrid },
+  { id: "industries", label: "Portfolios", icon: Factory },
 ];
 
 type SegmentTabsProps = {

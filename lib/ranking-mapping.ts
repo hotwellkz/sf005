@@ -16,6 +16,13 @@ const AI_SCORE_DELTA_KEYS = ["aiScoreDelta", "change"] as const;
 /** Volume column = daily trading volume. Key from API. */
 const VOLUME_KEYS = ["dailyVolume", "volume", "avgVolume", "averageVolume"] as const;
 
+/** Industry from Finnhub profile. Key from API. */
+const INDUSTRY_KEYS = ["industry", "finnhubIndustry"] as const;
+
+/** Country from API (ISO2 code and optional name). No default to US. */
+const COUNTRY_CODE_KEYS = ["countryCode", "country"] as const;
+const COUNTRY_NAME_KEYS = ["countryName"] as const;
+
 type RawTickerValue = Record<string, unknown>;
 
 function pickNumber(obj: RawTickerValue, keys: readonly string[]): number | null {
@@ -49,10 +56,14 @@ export function rankingResponseToRows(data: RankingApiResponse): RankingRow[] {
   const entries = Object.entries(byTicker);
 
   if (typeof window !== "undefined" && process.env.NODE_ENV === "development" && entries.length > 0) {
-    const firstValue = entries[0][1];
-    const keys = firstValue && typeof firstValue === "object" ? Object.keys(firstValue) : [];
-    // eslint-disable-next-line no-console -- dev only: remove after mapping confirmed
-    console.log("[ranking] First row keys from API:", keys);
+    const first = entries[0][1];
+    const keys = first && typeof first === "object" ? Object.keys(first) : [];
+    const sampleCountries = entries.slice(0, 5).map(([t, r]) => ({
+      ticker: t,
+      countryCode: (r as RawTickerValue).countryCode ?? (r as RawTickerValue).country,
+    }));
+    // eslint-disable-next-line no-console -- dev: verify country mapping (SAN->ES, BCS->GB, etc.)
+    console.log("[ranking] API keys:", keys, "sample country:", sampleCountries);
   }
 
   return entries.map(([ticker, raw], index) => {
@@ -60,13 +71,18 @@ export function rankingResponseToRows(data: RankingApiResponse): RankingRow[] {
     const changeRaw = pickNumber(raw, [...AI_SCORE_DELTA_KEYS]);
     const change = changeRaw != null ? Math.round(changeRaw) : null;
     const volume = pickNumber(raw, [...VOLUME_KEYS]);
+    const industry = pickString(raw, [...INDUSTRY_KEYS]);
+    const countryCode = pickString(raw, [...COUNTRY_CODE_KEYS]);
+    const countryName = pickString(raw, [...COUNTRY_NAME_KEYS]);
+    const buyTrackRecord = raw.buy_track_record === true || raw.buy_track_record === 1;
+    const sellTrackRecord = raw.sell_track_record === true || raw.sell_track_record === 1;
 
     return {
       ticker,
       rank: index + 1,
       companyName: companyName ?? null,
-      country: "USA",
-      countryCode: "US",
+      country: countryName ?? countryCode ?? null,
+      countryCode: countryCode ?? null,
       aiscore: Number(raw.aiscore) || 0,
       fundamental: Number(raw.fundamental) || 0,
       technical: Number(raw.technical) || 0,
@@ -74,6 +90,9 @@ export function rankingResponseToRows(data: RankingApiResponse): RankingRow[] {
       low_risk: Number(raw.low_risk) || 0,
       change,
       volume: volume ?? null,
+      industry: industry ?? null,
+      buyTrackRecord: buyTrackRecord || undefined,
+      sellTrackRecord: sellTrackRecord || undefined,
     };
   });
 }

@@ -11,12 +11,31 @@ import {
 import { useState, useMemo } from "react";
 import { ScoreRing } from "@/components/score-ring";
 import { FlagIcon } from "@/components/FlagIcon";
+import { Tooltip } from "@/components/ui/Tooltip";
 import type { RankingRow } from "@/lib/types";
 import { cn, formatCompactNumber } from "@/lib/utils";
-import { ArrowUp, ArrowDown, ArrowRight, Info, ChevronDown, Plus } from "lucide-react";
+import { ArrowUp, ArrowDown, ArrowRight, ChevronDown, Plus } from "lucide-react";
+import { InfoIcon } from "@/components/ui/InfoIcon";
 
 const AI_SCORE_HIGHLIGHT = "#EAF4FF";
 const HEADER_BG = "#3A3F45";
+
+/** Map: column id / accessorKey -> tooltip content (Danelfin-style). Only for header tooltips. */
+const HEADER_TOOLTIPS: Record<string, string> = {
+  rank: "Ranking based on AI Score, the lower the ranking, the better",
+  ticker: "Company name",
+  company: "Company name",
+  country: "Country where the headquarters are located",
+  aiscore: "Danelfin AI global score based on all data available (1-10)",
+  change: "Change in AI Score vs the previous day",
+  fundamental: "Danelfin AI subscore only based on company fundamental indicators (1-10)",
+  technical: "Danelfin AI subscore only based on technical indicators produced by price & volume (1-10)",
+  sentiment: "Danelfin AI subscore only based on sentiment indicators (1-10)",
+  low_risk:
+    "Risk subscore based on the negative price fluctuations (semi-deviation) latest 500 market days. The higher the score, the lower the downside risk.",
+  volume: "Total number of shares traded during the last trading session",
+  industry: "Industry GICS (Global Industry Classification Standard)",
+};
 
 /** Change column = AI Score delta (integer). No percent sign. */
 function ChangeCell({ value }: { value: number | null | undefined }) {
@@ -43,9 +62,10 @@ function ChangeCell({ value }: { value: number | null | undefined }) {
 type RankingTableProps = {
   data: RankingRow[];
   maxRows?: number;
+  onAddToPortfolio?: (ticker: string) => void;
 };
 
-export function RankingTable({ data, maxRows }: RankingTableProps) {
+export function RankingTable({ data, maxRows, onAddToPortfolio }: RankingTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "rank", desc: false }]);
   const displayData = useMemo(() => {
     if (maxRows != null && maxRows > 0) return data.slice(0, maxRows);
@@ -68,40 +88,31 @@ export function RankingTable({ data, maxRows }: RankingTableProps) {
         accessorKey: "ticker",
         header: "Company",
         cell: ({ row }) => (
-          <div className="flex items-start gap-2">
-            <div className="flex flex-col gap-0.5">
-              <a
-                href={`/rankings?tab=stocks&ticker=${row.original.ticker}`}
-                className="font-semibold text-[#1D74C6] hover:underline"
-              >
-                {row.original.ticker}
-              </a>
-              {row.original.companyName ? (
-                <span className="text-xs text-gray-500">
-                  {row.original.companyName}
-                </span>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="mt-0.5 shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-              aria-label="Add to watchlist"
+          <div className="flex flex-col gap-0.5">
+            <a
+              href={`/rankings?tab=stocks&ticker=${row.original.ticker}`}
+              className="font-semibold text-[#1D74C6] hover:underline"
             >
-              <Plus className="h-4 w-4" />
-            </button>
+              {row.original.ticker}
+            </a>
+            {row.original.companyName ? (
+              <span className="text-xs text-gray-500">
+                {row.original.companyName}
+              </span>
+            ) : null}
           </div>
         ),
-        size: 360,
+        size: 320,
         meta: { align: "left" as const },
       },
       {
         accessorKey: "country",
         header: "Country",
         cell: ({ row }) => {
-          const countryCode =
-            row.original.countryCode ?? row.original.country ?? "US";
+          const countryCode = row.original.countryCode ?? null;
+          const title = row.original.country ?? undefined;
           return (
-            <span className="flex justify-center">
+            <span className="flex justify-center" title={title}>
               <FlagIcon
                 countryCode={countryCode}
                 size={18}
@@ -116,15 +127,11 @@ export function RankingTable({ data, maxRows }: RankingTableProps) {
       {
         accessorKey: "aiscore",
         header: () => (
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-0">
             AI Score
-            <button
-              type="button"
-              className="rounded p-0.5 text-white/80 hover:bg-white/10 hover:text-white"
-              aria-label="About AI Score"
-            >
-              <Info className="h-3.5 w-3.5" />
-            </button>
+            <span aria-label="About AI Score">
+              <InfoIcon />
+            </span>
           </span>
         ),
         enableSorting: true,
@@ -195,11 +202,40 @@ export function RankingTable({ data, maxRows }: RankingTableProps) {
             {formatCompactNumber(getValue() as number | null)}
           </span>
         ),
-        size: 130,
+        size: 110,
         meta: { align: "right" as const },
       },
+      {
+        accessorKey: "industry",
+        header: "Industry",
+        cell: ({ getValue }) => (
+          <span className="text-sm text-[#1D74C6]">
+            {(getValue() as string | null) ?? "—"}
+          </span>
+        ),
+        size: 140,
+        meta: { align: "left" as const },
+      },
+      {
+        id: "add",
+        header: "",
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => onAddToPortfolio?.(row.original.ticker)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E5E7EB] bg-white text-gray-600 transition-colors hover:border-[#1D74C6] hover:bg-[#EAF4FF] hover:text-[#1D74C6]"
+              aria-label="Add to portfolio"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        ),
+        size: 70,
+        meta: { align: "center" as const },
+      },
     ],
-    []
+    [onAddToPortfolio]
   );
 
   const table = useReactTable({
@@ -220,8 +256,41 @@ export function RankingTable({ data, maxRows }: RankingTableProps) {
               {hg.headers.map((h, idx) => {
                 const isAiScore = (h.column.columnDef.meta as { highlightColumn?: boolean })?.highlightColumn;
                 const isLast = idx === hg.headers.length - 1;
+                const isAddColumn = (h.column.columnDef as { id?: string }).id === "add";
                 const align = (h.column.columnDef.meta as { align?: "left" | "center" | "right" })?.align ?? "left";
                 const alignClass = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
+                const columnId =
+                  (h.column.columnDef as { id?: string }).id ??
+                  h.column.id ??
+                  (h.column.columnDef as { accessorKey?: string }).accessorKey;
+                const tooltipText =
+                  typeof columnId === "string" ? HEADER_TOOLTIPS[columnId] : undefined;
+
+                const headerContent = (
+                  <div className={cn("flex items-center gap-1", isLast && !isAddColumn && "justify-between")}>
+                    {h.column.getCanSort() ? (
+                      <button
+                        type="button"
+                        onClick={() => h.column.toggleSorting()}
+                        className="flex items-center gap-1 hover:opacity-90"
+                      >
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                      </button>
+                    ) : (
+                      flexRender(h.column.columnDef.header, h.getContext())
+                    )}
+                    {isLast && !isAddColumn && (
+                      <button
+                        type="button"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#E5E7EB] bg-white text-gray-600 hover:bg-gray-50"
+                        aria-label="Expand options"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+
                 return (
                   <th
                     key={h.id}
@@ -237,28 +306,13 @@ export function RankingTable({ data, maxRows }: RankingTableProps) {
                         : undefined,
                     }}
                   >
-                    <div className={cn("flex items-center gap-1", isLast && "justify-between")}>
-                      {h.column.getCanSort() ? (
-                        <button
-                          type="button"
-                          onClick={() => h.column.toggleSorting()}
-                          className="flex items-center gap-1 hover:opacity-90"
-                        >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                        </button>
-                      ) : (
-                        flexRender(h.column.columnDef.header, h.getContext())
-                      )}
-                      {isLast && (
-                        <button
-                          type="button"
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#E5E7EB] bg-white text-gray-600 hover:bg-gray-50"
-                          aria-label="Expand options"
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                    {tooltipText ? (
+                      <Tooltip content={tooltipText} placement="top">
+                        {headerContent}
+                      </Tooltip>
+                    ) : (
+                      headerContent
+                    )}
                   </th>
                 );
               })}

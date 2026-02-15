@@ -19,6 +19,9 @@ export type RankingRow = {
   low_risk: number;
   change: number | null;
   volume: number | null;
+  industry: string | null;
+  buyTrackRecord?: boolean;
+  sellTrackRecord?: boolean;
 };
 
 export type SectorItem = { sector: string };

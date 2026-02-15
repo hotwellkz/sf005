@@ -6,7 +6,7 @@ import { toCountryCode, isEuCode } from "@/lib/country";
 import { cn } from "@/lib/utils";
 
 type FlagIconProps = {
-  countryCode: string;
+  countryCode: string | null | undefined;
   size?: number;
   className?: string;
 };
@@ -27,7 +27,28 @@ export function FlagIcon({
 }: FlagIconProps) {
   const [imgError, setImgError] = useState(false);
   const code = toCountryCode(countryCode);
-  const normalized = code.toUpperCase();
+  const normalized = code?.toUpperCase() ?? "";
+
+  if (code == null || normalized === "") {
+    return (
+      <span
+        className={cn("inline-flex items-center justify-center text-gray-400", className)}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 2,
+          border: "1px solid rgba(0,0,0,0.08)",
+          fontSize: size * 0.7,
+          lineHeight: 1,
+        }}
+        role="img"
+        aria-label="Unknown country"
+        title="Country unknown"
+      >
+        —
+      </span>
+    );
+  }
 
   if (isEuCode(normalized)) {
     return (
@@ -52,18 +73,21 @@ export function FlagIcon({
   if (normalized.length < 2 || imgError) {
     return (
       <span
-        className={cn("inline-block flex-shrink-0 bg-gray-300", className)}
+        className={cn("inline-flex items-center justify-center text-gray-400", className)}
         style={{
           width: size,
           height: size,
           minWidth: size,
           minHeight: size,
           borderRadius: 2,
-          border: "1px solid rgba(0,0,0,0.06)",
+          border: "1px solid rgba(0,0,0,0.08)",
+          fontSize: size * 0.7,
         }}
         role="img"
-        aria-label={code || "Unknown"}
-      />
+        aria-label="Unknown"
+      >
+        —
+      </span>
     );
   }
 

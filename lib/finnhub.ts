@@ -1,10 +1,24 @@
 /**
- * Finnhub API integration: profile (company name), quote (fallback volume), candles (daily volume).
+ * Finnhub API integration: profile (company name, industry, country), quote (fallback volume), candles (daily volume).
  * Server-side only. No price change exposed to UI.
  */
 
+import { toCountryCodeOrNull } from "./country";
+
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const enrichCache = new Map<string, { data: { companyName: string | null }; ts: number }>();
+const PROFILE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes for profile (country, name, industry)
+const enrichCache = new Map<
+  string,
+  {
+    data: {
+      companyName: string | null;
+      industry: string | null;
+      countryCode: string | null;
+      countryName: string | null;
+    };
+    ts: number;
+  }
+>();
 const dailyVolumeCache = new Map<string, { data: number | null; ts: number }>();
 
 export type FinnhubQuote = {
@@ -110,21 +124,40 @@ export async function getFinnhubDailyVolume(
 }
 
 /**
- * Company name only (for ranking enrichment). No price/change.
+ * Company name, industry, and country (for ranking enrichment). No price/change.
+ * Country from profile2.country, normalized to ISO2. Cached 30 min.
  */
-export async function getEnrichedData(symbol: string): Promise<{ companyName: string | null }> {
+export async function getEnrichedData(
+  symbol: string
+): Promise<{
+  companyName: string | null;
+  industry: string | null;
+  countryCode: string | null;
+  countryName: string | null;
+}> {
   const cacheKey = symbol.toUpperCase();
   const now = Date.now();
   const hit = enrichCache.get(cacheKey);
-  if (hit && now - hit.ts < CACHE_TTL_MS) return hit.data;
+  if (hit && now - hit.ts < PROFILE_CACHE_TTL_MS) return hit.data;
 
   const profile = await getFinnhubProfile(symbol);
   const companyName =
     profile?.name != null && String(profile.name).trim() !== ""
       ? String(profile.name).trim()
       : null;
+  const industry =
+    profile?.finnhubIndustry != null && String(profile.finnhubIndustry).trim() !== ""
+      ? String(profile.finnhubIndustry).trim()
+      : null;
 
-  const data = { companyName };
+  const rawCountry =
+    profile?.country != null && String(profile.country).trim() !== ""
+      ? String(profile.country).trim()
+      : null;
+  const countryCode = toCountryCodeOrNull(rawCountry);
+  const countryName = rawCountry ?? null;
+
+  const data = { companyName, industry, countryCode, countryName };
   enrichCache.set(cacheKey, { data, ts: now });
   return data;
 }

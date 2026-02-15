@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
   if (industry) params.set("industry", industry);
   const buy_track_record = searchParams.get("buy_track_record");
   if (buy_track_record) params.set("buy_track_record", buy_track_record);
+  const sell_track_record = searchParams.get("sell_track_record");
+  if (sell_track_record) params.set("sell_track_record", sell_track_record);
 
   const datesToTry = dateParam
     ? [dateParam, ...previousDays(dateParam, 10)]
@@ -90,15 +92,26 @@ export async function GET(request: NextRequest) {
             return {
               ticker: t,
               companyName: profile.companyName ?? undefined,
+              industry: profile.industry ?? undefined,
+              countryCode: profile.countryCode ?? undefined,
+              countryName: profile.countryName ?? undefined,
               dailyVolume: dailyVolume ?? undefined,
             };
           })
         );
-        for (const { ticker: t, companyName, dailyVolume } of enriched) {
+        for (const { ticker: t, companyName, industry, countryCode, countryName, dailyVolume } of enriched) {
           if (!byTicker[t]) continue;
           if (companyName != null) byTicker[t].companyName = companyName;
+          if (industry != null) byTicker[t].industry = industry;
+          if (countryCode != null) byTicker[t].countryCode = countryCode;
+          if (countryName != null) byTicker[t].countryName = countryName;
           if (dailyVolume != null) byTicker[t].dailyVolume = dailyVolume;
         }
+      }
+      for (const t of tickers) {
+        const raw = byTicker[t];
+        if (raw?.buy_track_record != null) byTicker[t].buyTrackRecord = raw.buy_track_record;
+        if (raw?.sell_track_record != null) byTicker[t].sellTrackRecord = raw.sell_track_record;
       }
 
       return NextResponse.json(data);
