@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/toast";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { AuthGateGate } from "@/components/auth/AuthGateGate";
 
 export const metadata: Metadata = {
   title: "StockForge AI",
@@ -37,7 +40,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            {children}
+            <SiteFooter />
+            <AuthGateGate />
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ChevronDown, Menu, User, LayoutGrid } from "lucide-react";
+import { ChevronDown, Menu, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NavbarAuth } from "@/components/nav/NavbarAuth";
 
 const navItems = [
   { label: "Top Stocks", href: "#ranking", hasDropdown: true },
@@ -60,13 +61,7 @@ export function Navbar() {
             <LayoutGrid className="h-4 w-4" />
             <span>Portfolios</span>
           </button>
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white hover:bg-white/10"
-            aria-label="Profile"
-          >
-            <User className="h-5 w-5" />
-          </button>
+          <NavbarAuth />
           <button
             type="button"
             className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-white hover:bg-white/10"

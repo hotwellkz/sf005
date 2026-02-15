@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/navbar";
-import { Hero } from "@/components/hero";
+import { HeroHeadline } from "@/components/home/HeroHeadline";
+import { FeaturedInStrip } from "@/components/home/FeaturedInStrip";
 import { AIScoreLadder } from "@/components/home/AIScoreLadder";
 import { RankingSection } from "@/components/ranking/ranking-section";
 import { Testimonials } from "@/components/home/Testimonials";
@@ -16,7 +17,6 @@ export default function HomePage() {
     <>
       <Navbar />
       <main>
-        <Hero />
         <RankingSection />
         <Testimonials />
         <AIScoreLadder />
@@ -27,6 +27,8 @@ export default function HomePage() {
         <ExplainableSignalsBlock />
         <PortfolioTrackingBlock />
         <HistoricalScoresBlock />
+        <FeaturedInStrip />
+        <HeroHeadline />
       </main>
     </>
   );
