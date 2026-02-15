@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1d74c6;
+  --primary-dark: #0b1d33;
+  --table-header: #3a3f45;
+  --border: #e5e7eb;
+  --section-alt: #f6f8fb;
+  --chip-bg: #f1f3f6;
+}
+
+@layer base {
+  html {
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+}
+
+/* Hide scrollbar but allow scroll */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
