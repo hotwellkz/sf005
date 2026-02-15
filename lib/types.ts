@@ -9,16 +9,16 @@ export type ScoreRecord = {
 export type RankingRow = {
   ticker: string;
   rank: number;
-  companyName?: string;
-  country?: string;
-  countryCode?: string;
+  companyName: string | null;
+  country: string | null;
+  countryCode: string | null;
   aiscore: number;
   fundamental: number;
   technical: number;
   sentiment: number;
   low_risk: number;
-  change?: number;
-  volume?: number;
+  change: number | null;
+  volume: number | null;
 };
 
 export type SectorItem = { sector: string };

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getEnrichedData, getFinnhubDailyVolume } from "@/lib/finnhub";
+import { getPrevAiScore } from "@/lib/danelfin-prev";
 
 const DANELFIN_BASE = "https://apirest.danelfin.com";
 
@@ -55,6 +57,50 @@ export async function GET(request: NextRequest) {
     });
     if (res.ok) {
       const data = await res.json();
+      const dateKey = Object.keys(data)[0];
+      if (!dateKey) return NextResponse.json(data);
+
+      const byTicker = data[dateKey] as Record<string, Record<string, unknown>>;
+      const tickers = Object.keys(byTicker);
+
+      const deltas = await Promise.all(
+        tickers.map(async (t) => {
+          const currentAiscore = Number(byTicker[t]?.aiscore);
+          const prevAiscore = Number.isNaN(currentAiscore)
+            ? null
+            : await getPrevAiScore(t, dateKey, key);
+          const aiScoreDelta =
+            prevAiscore != null && !Number.isNaN(currentAiscore)
+              ? Math.round(currentAiscore - prevAiscore)
+              : null;
+          return { ticker: t, aiScoreDelta };
+        })
+      );
+      for (const { ticker: t, aiScoreDelta } of deltas) {
+        byTicker[t].aiScoreDelta = aiScoreDelta;
+      }
+
+      if (process.env.FINNHUB_API_KEY) {
+        const enriched = await Promise.all(
+          tickers.map(async (t) => {
+            const [profile, dailyVolume] = await Promise.all([
+              getEnrichedData(t),
+              getFinnhubDailyVolume(t, dateKey),
+            ]);
+            return {
+              ticker: t,
+              companyName: profile.companyName ?? undefined,
+              dailyVolume: dailyVolume ?? undefined,
+            };
+          })
+        );
+        for (const { ticker: t, companyName, dailyVolume } of enriched) {
+          if (!byTicker[t]) continue;
+          if (companyName != null) byTicker[t].companyName = companyName;
+          if (dailyVolume != null) byTicker[t].dailyVolume = dailyVolume;
+        }
+      }
+
       return NextResponse.json(data);
     }
     if (res.status === 400 || res.status === 403) {
@@ -66,8 +112,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(
-    { error: "No ranking data available for the requested period" },
-    { status: 404 }
-  );
+  // No data for any date: return 200 with empty ranking so UI can show empty table
+  const fallbackDate = dateParam || new Date().toISOString().slice(0, 10);
+  return NextResponse.json({ [fallbackDate]: {} });
 }
