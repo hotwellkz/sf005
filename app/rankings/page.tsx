@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getTopStocks, getTradeIdeas } from "@/lib/api";
 import type { RankingRow } from "@/lib/types";
@@ -70,7 +70,7 @@ function rowsToCSV(rows: RankingRow[]): string {
   return lines.join("\n");
 }
 
-export default function RankingsPage() {
+function RankingsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const toast = useToast();
@@ -424,5 +424,24 @@ export default function RankingsPage() {
         </section>
       </main>
     </>
+  );
+}
+
+function RankingsFallback() {
+  return (
+    <>
+      <Navbar />
+      <main className="flex min-h-[40vh] items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1D74C6] border-t-transparent" />
+      </main>
+    </>
+  );
+}
+
+export default function RankingsPage() {
+  return (
+    <Suspense fallback={<RankingsFallback />}>
+      <RankingsContent />
+    </Suspense>
   );
 }

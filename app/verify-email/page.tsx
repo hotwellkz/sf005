@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/toast";
 
 const RESEND_COOLDOWN_SEC = 60;
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const [checking, setChecking] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const searchParams = useSearchParams();
@@ -115,5 +115,24 @@ export default function VerifyEmailPage() {
         </div>
       </main>
     </>
+  );
+}
+
+function VerifyEmailFallback() {
+  return (
+    <>
+      <Navbar />
+      <main className="flex min-h-[40vh] items-center justify-center bg-slate-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+      </main>
+    </>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailFallback />}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
