@@ -53,7 +53,10 @@ export async function getFinnhubQuote(symbol: string): Promise<FinnhubQuote> {
   const key = getApiKey();
   if (!key) return {};
   const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${key}`;
-  const res = await fetch(url, { next: { revalidate: 0 } });
+  const res = await fetch(url, {
+    next: { revalidate: 0 },
+    signal: AbortSignal.timeout(10_000),
+  });
   if (!res.ok) return {};
   return res.json();
 }
@@ -62,7 +65,10 @@ export async function getFinnhubProfile(symbol: string): Promise<FinnhubProfile>
   const key = getApiKey();
   if (!key) return {};
   const url = `https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(symbol)}&token=${key}`;
-  const res = await fetch(url, { next: { revalidate: 0 } });
+  const res = await fetch(url, {
+    next: { revalidate: 0 },
+    signal: AbortSignal.timeout(10_000),
+  });
   if (!res.ok) return {};
   return res.json();
 }
@@ -90,7 +96,10 @@ export async function getFinnhubDailyVolume(
   const fromSec = Math.floor((date.getTime() - 2 * 86400 * 1000) / 1000);
   const toSec = Math.floor((date.getTime() + 3 * 86400 * 1000) / 1000);
   const url = `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=D&from=${fromSec}&to=${toSec}&token=${apiKey}`;
-  const res = await fetch(url, { next: { revalidate: 0 } });
+  const res = await fetch(url, {
+    next: { revalidate: 0 },
+    signal: AbortSignal.timeout(10_000),
+  });
   if (!res.ok) {
     const quote = await getFinnhubQuote(symbol);
     const v = quote?.v != null && !Number.isNaN(Number(quote.v)) ? Number(quote.v) : null;

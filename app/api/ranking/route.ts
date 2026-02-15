@@ -49,54 +49,78 @@ export async function GET(request: NextRequest) {
     ? [dateParam, ...previousDays(dateParam, 10)]
     : [new Date().toISOString().slice(0, 10)];
 
+  const FETCH_TIMEOUT_MS = 20_000;
+
   for (const date of datesToTry) {
     const q = new URLSearchParams(params);
     q.set("date", date);
     const url = `${DANELFIN_BASE}/ranking?${q.toString()}`;
-    const res = await fetch(url, {
-      headers: { "x-api-key": key },
-      next: { revalidate: 3600 },
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: { "x-api-key": key },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+    } catch {
+      continue;
+    }
     if (res.ok) {
       const data = await res.json();
       const dateKey = Object.keys(data)[0];
       if (!dateKey) return NextResponse.json(data);
 
       const byTicker = data[dateKey] as Record<string, Record<string, unknown>>;
-      const tickers = Object.keys(byTicker);
+      const allTickers = Object.keys(byTicker);
+      const MAX_TICKERS_FOR_DELTA = 120;
+      const tickersForDelta = allTickers.slice(0, MAX_TICKERS_FOR_DELTA);
 
       const deltas = await Promise.all(
-        tickers.map(async (t) => {
-          const currentAiscore = Number(byTicker[t]?.aiscore);
-          const prevAiscore = Number.isNaN(currentAiscore)
-            ? null
-            : await getPrevAiScore(t, dateKey, key);
-          const aiScoreDelta =
-            prevAiscore != null && !Number.isNaN(currentAiscore)
-              ? Math.round(currentAiscore - prevAiscore)
-              : null;
-          return { ticker: t, aiScoreDelta };
+        tickersForDelta.map(async (t) => {
+          try {
+            const currentAiscore = Number(byTicker[t]?.aiscore);
+            const prevAiscore = Number.isNaN(currentAiscore)
+              ? null
+              : await getPrevAiScore(t, dateKey, key);
+            const aiScoreDelta =
+              prevAiscore != null && !Number.isNaN(currentAiscore)
+                ? Math.round(currentAiscore - prevAiscore)
+                : null;
+            return { ticker: t, aiScoreDelta };
+          } catch {
+            return { ticker: t, aiScoreDelta: null };
+          }
         })
       );
       for (const { ticker: t, aiScoreDelta } of deltas) {
         byTicker[t].aiScoreDelta = aiScoreDelta;
       }
+      for (const t of allTickers.slice(MAX_TICKERS_FOR_DELTA)) {
+        byTicker[t].aiScoreDelta = null;
+      }
+
+      const MAX_TICKERS_FOR_ENRICHMENT = 150;
+      const tickersForEnrichment = allTickers.slice(0, MAX_TICKERS_FOR_ENRICHMENT);
 
       if (process.env.FINNHUB_API_KEY) {
         const enriched = await Promise.all(
-          tickers.map(async (t) => {
-            const [profile, dailyVolume] = await Promise.all([
-              getEnrichedData(t),
-              getFinnhubDailyVolume(t, dateKey),
-            ]);
-            return {
-              ticker: t,
-              companyName: profile.companyName ?? undefined,
-              industry: profile.industry ?? undefined,
-              countryCode: profile.countryCode ?? undefined,
-              countryName: profile.countryName ?? undefined,
-              dailyVolume: dailyVolume ?? undefined,
-            };
+          tickersForEnrichment.map(async (t) => {
+            try {
+              const [profile, dailyVolume] = await Promise.all([
+                getEnrichedData(t),
+                getFinnhubDailyVolume(t, dateKey),
+              ]);
+              return {
+                ticker: t,
+                companyName: profile.companyName ?? undefined,
+                industry: profile.industry ?? undefined,
+                countryCode: profile.countryCode ?? undefined,
+                countryName: profile.countryName ?? undefined,
+                dailyVolume: dailyVolume ?? undefined,
+              };
+            } catch {
+              return { ticker: t, companyName: undefined, industry: undefined, countryCode: undefined, countryName: undefined, dailyVolume: undefined };
+            }
           })
         );
         for (const { ticker: t, companyName, industry, countryCode, countryName, dailyVolume } of enriched) {
@@ -108,7 +132,7 @@ export async function GET(request: NextRequest) {
           if (dailyVolume != null) byTicker[t].dailyVolume = dailyVolume;
         }
       }
-      for (const t of tickers) {
+      for (const t of allTickers) {
         const raw = byTicker[t];
         if (raw?.buy_track_record != null) byTicker[t].buyTrackRecord = raw.buy_track_record;
         if (raw?.sell_track_record != null) byTicker[t].sellTrackRecord = raw.sell_track_record;

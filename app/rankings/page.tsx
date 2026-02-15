@@ -361,7 +361,7 @@ export default function RankingsPage() {
             {/* Table card */}
             <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_8px_24px_rgba(16,24,40,0.08)]">
               <h3 className="text-lg font-bold text-gray-900">
-                Popular Stocks Ranked by Danelfin AI
+                Popular Stocks Ranked by StockForge AI
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">
                 US-listed stocks are ranked according to the AI Score, which

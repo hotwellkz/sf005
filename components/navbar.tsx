@@ -22,7 +22,7 @@ export function Navbar() {
             href="/"
             className="flex items-center gap-2 text-white font-bold text-xl tracking-tight"
           >
-            Danelfin
+            StockForge AI
           </Link>
           <span
             className="rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide"

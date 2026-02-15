@@ -20,17 +20,17 @@ import { InfoIcon } from "@/components/ui/InfoIcon";
 const AI_SCORE_HIGHLIGHT = "#EAF4FF";
 const HEADER_BG = "#3A3F45";
 
-/** Map: column id / accessorKey -> tooltip content (Danelfin-style). Only for header tooltips. */
+/** Map: column id / accessorKey -> tooltip content. Only for header tooltips. */
 const HEADER_TOOLTIPS: Record<string, string> = {
   rank: "Ranking based on AI Score, the lower the ranking, the better",
   ticker: "Company name",
   company: "Company name",
   country: "Country where the headquarters are located",
-  aiscore: "Danelfin AI global score based on all data available (1-10)",
+  aiscore: "StockForge AI global score based on all data available (1–10)",
   change: "Change in AI Score vs the previous day",
-  fundamental: "Danelfin AI subscore only based on company fundamental indicators (1-10)",
-  technical: "Danelfin AI subscore only based on technical indicators produced by price & volume (1-10)",
-  sentiment: "Danelfin AI subscore only based on sentiment indicators (1-10)",
+  fundamental: "StockForge AI subscore only based on company fundamental indicators (1–10)",
+  technical: "StockForge AI subscore only based on technical indicators produced by price & volume (1–10)",
+  sentiment: "StockForge AI subscore only based on sentiment indicators (1–10)",
   low_risk:
     "Risk subscore based on the negative price fluctuations (semi-deviation) latest 500 market days. The higher the score, the lower the downside risk.",
   volume: "Total number of shares traded during the last trading session",

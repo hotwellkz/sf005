@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 import type { RankingRow } from "@/lib/types";
 import { RankingTable } from "./ranking-table";
 
-const CARD_TITLE = "Popular Stocks Ranked by Danelfin AI";
+const CARD_TITLE = "Popular Stocks Ranked by StockForge AI";
 const CARD_DESCRIPTION =
   "US-listed stocks are ranked according to the AI Score, which rates the probability of beating the market in the next 3 months.";
 

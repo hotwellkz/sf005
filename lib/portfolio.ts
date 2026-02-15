@@ -2,7 +2,7 @@
  * Client-side portfolio (localStorage). No server/DB.
  */
 
-const STORAGE_KEY = "danelfin_portfolio_tickers";
+const STORAGE_KEY = "stockforge_portfolio_tickers";
 
 export function addTicker(ticker: string): void {
   if (typeof window === "undefined") return;

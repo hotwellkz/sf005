@@ -1,5 +1,5 @@
 /**
- * Fetch previous trading day's AI score for a ticker from Danelfin.
+ * Fetch previous trading day's AI score for a ticker from the ranking API.
  * Used to compute AI Score delta (Change column). Cached 5 min. Concurrency limited.
  */
 
@@ -52,6 +52,7 @@ async function fetchAiscoreForDate(
     const res = await fetch(url, {
       headers: { "x-api-key": apiKey },
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as Record<string, Record<string, unknown>>;

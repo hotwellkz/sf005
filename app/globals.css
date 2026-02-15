@@ -25,7 +25,7 @@
   scrollbar-width: thin;
 }
 
-/* Tooltip animation (Danelfin-style) */
+/* Tooltip animation */
 @keyframes tooltipFadeIn {
   from {
     opacity: 0;

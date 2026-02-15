@@ -3,9 +3,13 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
-  title: "Danelfin – AI-Powered Stock Picking",
+  title: "StockForge AI",
   description:
-    "Invest with the odds in your favor. Get unique insights, boost your portfolios, and make smart data-driven investment decisions.",
+    "AI-powered stock rankings and investment insights by StockForge AI",
+  applicationName: "StockForge AI",
+  appleWebApp: {
+    title: "StockForge AI",
+  },
 };
 
 export default function RootLayout({
@@ -16,6 +20,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <meta name="application-name" content="StockForge AI" />
+        <meta name="apple-mobile-web-app-title" content="StockForge AI" />
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"

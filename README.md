@@ -1,31 +1,33 @@
-# Danelfin Homepage Clone
+# StockForge AI
 
-Клон главной страницы и раздела ранжирования Danelfin с реальными данными через Danelfin API.
+AI-powered stock rankings and investment insights by StockForge AI. Clone of a ranking UI with real data via external ranking API.
 
-## Стек
+## Stack
 
 - **Frontend:** Next.js 14 (App Router), TypeScript, TailwindCSS, TanStack Table, Recharts, Lucide React
-- **Backend:** Next.js API routes (прокси к Danelfin API)
+- **Backend:** Next.js API routes (proxy to external ranking API)
 
-## Запуск
+## Run
 
-1. Установка зависимостей и запуск dev-сервера уже выполнены.
-2. API-ключ задаётся в `.env.local`:
+1. Install dependencies and start the dev server.
+2. API keys in `.env.local`:
    ```env
    DANELFIN_API_KEY=your_api_key_here
+   FINNHUB_API_KEY=your_finnhub_key_here
    ```
-3. Откройте [http://localhost:3000](http://localhost:3000).
+3. Open [http://localhost:3000](http://localhost:3000).
 
-## Скрипты
+## Scripts
 
-- `npm run dev` — режим разработки
-- `npm run build` — сборка
-- `npm run start` — запуск production-сборки
+- `npm run dev` — development
+- `npm run build` — build
+- `npm run start` — production
+- `npm run dev:turbo` — dev with Turbopack
 
-## Структура
+## Structure
 
-- `app/` — страницы и API routes
-- `components/` — Navbar, Hero, Ranking (таблица, вкладки), ScoreRing, CountryChips
-- `lib/` — api.ts (клиентские вызовы), types.ts, utils.ts
+- `app/` — pages and API routes
+- `components/` — Navbar, Hero, Ranking (table, tabs), ScoreRing, CountryChips
+- `lib/` — api.ts, types.ts, utils.ts, brand.ts
 
-Данные рейтинга (Top Stocks, ETFs, Trade Ideas) загружаются с Danelfin API через прокси `/api/ranking`, `/api/sectors`, `/api/industries`.
+Ranking data (Top Stocks, ETFs, Trade Ideas) is loaded via `/api/ranking`, `/api/sectors`, `/api/industries`.
