@@ -25,6 +25,7 @@ export default function RootLayout({
       <head>
         <meta name="application-name" content="StockForge AI" />
         <meta name="apple-mobile-web-app-title" content="StockForge AI" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
@@ -40,13 +41,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <ToastProvider>
+        <ToastProvider>
+          <AuthProvider>
             {children}
             <SiteFooter />
             <AuthGateGate />
-          </ToastProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

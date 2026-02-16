@@ -18,9 +18,6 @@ const firebaseConfig = {
 function initFirebase() {
   if (getApps().length > 0) return getApp();
   if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-    if (typeof window !== "undefined") {
-      console.warn("[Firebase] Missing env: NEXT_PUBLIC_FIREBASE_*");
-    }
     return null;
   }
   return initializeApp(firebaseConfig);

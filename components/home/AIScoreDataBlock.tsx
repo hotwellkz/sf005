@@ -19,17 +19,22 @@ const PILLS = [
   { label: "News Sentiment — Bin 6/10", top: 38, left: 8, color: "bg-slate-400/90 text-white" },
 ];
 
+/** Round to avoid server/client float mismatch (hydration) */
+function r2(v: number) {
+  return Math.round(v * 100) / 100;
+}
+
 function RadarSVG({ className }: { className?: string }) {
-  const cx = VIEWBOX / 2;
-  const cy = VIEWBOX / 2;
-  const maxR = VIEWBOX / 2 - 20;
+  const cx = r2(VIEWBOX / 2);
+  const cy = r2(VIEWBOX / 2);
+  const maxR = r2(VIEWBOX / 2 - 20);
 
   const circles = RINGS.map((r) => (
     <circle
       key={r}
       cx={cx}
       cy={cy}
-      r={r * maxR}
+      r={r2(r * maxR)}
       fill="none"
       stroke="rgba(148,163,184,0.25)"
       strokeWidth="1"
@@ -38,11 +43,11 @@ function RadarSVG({ className }: { className?: string }) {
 
   const dots: React.ReactNode[] = [];
   RINGS.forEach((ringRatio) => {
-    const r = ringRatio * maxR;
+    const r = r2(ringRatio * maxR);
     for (let i = 0; i < DOTS_PER_RING; i++) {
       const angle = (i / DOTS_PER_RING) * 2 * Math.PI - Math.PI / 2;
-      const x = cx + r * Math.cos(angle);
-      const y = cy + r * Math.sin(angle);
+      const x = r2(cx + r * Math.cos(angle));
+      const y = r2(cy + r * Math.sin(angle));
       dots.push(
         <circle
           key={`${ringRatio}-${i}`}
@@ -57,8 +62,8 @@ function RadarSVG({ className }: { className?: string }) {
 
   const axes = [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
     const rad = (deg * Math.PI) / 180;
-    const x2 = cx + maxR * Math.cos(rad);
-    const y2 = cy + maxR * Math.sin(rad);
+    const x2 = r2(cx + maxR * Math.cos(rad));
+    const y2 = r2(cy + maxR * Math.sin(rad));
     return (
       <line
         key={deg}

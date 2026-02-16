@@ -18,18 +18,23 @@ import {
   sendEmailVerification,
   signOut as fbSignOut,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
+
+const DEFAULT_AFTER_LOGIN = "/portfolios";
 
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
   isVerified: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<string | null>;
+  signUpWithEmail: (email: string, password: string) => Promise<string | null>;
+  sendPasswordReset: (email: string) => Promise<string | null>;
   resendVerificationEmail: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -47,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+    setPersistence(auth, browserLocalPersistence).catch(() => {});
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u ?? null);
       setLoading(false);
@@ -66,65 +72,120 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await res.user.reload();
       const updated = auth.currentUser;
       if (updated && !updated.emailVerified) {
-        toast.show("Подтвердите email для доступа к приватным разделам.");
+        toast.show("Please verify your email to access private sections.");
         router.push("/verify-email");
+      } else {
+        router.push(DEFAULT_AFTER_LOGIN);
       }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ошибка входа через Google";
-      toast.show(msg.includes("auth/") ? "Не удалось войти через Google." : msg);
+      const msg = e instanceof Error ? e.message : "Google sign-in failed";
+      if (msg.includes("auth/popup-closed-by-user")) {
+        toast.show("Sign-in was cancelled.");
+      } else if (msg.includes("auth/network-request-failed")) {
+        toast.show("Network error. Check your connection.");
+      } else {
+        toast.show(msg.includes("auth/") ? "Could not sign in with Google." : msg);
+      }
     }
   }, [toast, router]);
 
   const signInWithEmail = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string): Promise<string | null> => {
       if (!auth) {
-        toast.show("Auth is not configured.");
-        return;
+        const m = "Auth is not configured.";
+        toast.show(m);
+        return m;
       }
       try {
         const res = await signInWithEmailAndPassword(auth, email, password);
         await res.user.reload();
         const updated = auth.currentUser;
         if (updated && !updated.emailVerified) {
-          toast.show("Подтвердите email — иначе доступ к разделам будет закрыт.");
+          toast.show("Please verify your email to access private sections.");
           router.push("/verify-email");
-          return;
+          return null;
         }
-        toast.show("Вы вошли в аккаунт.");
+        router.push(DEFAULT_AFTER_LOGIN);
+        return null;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
+        let userMsg = "Invalid email or password.";
         if (msg.includes("auth/user-not-found") || msg.includes("auth/invalid-credential")) {
-          toast.show("Неверный email или пароль.");
+          userMsg = "Invalid email or password.";
         } else if (msg.includes("auth/too-many-requests")) {
-          toast.show("Слишком много попыток. Попробуйте позже.");
-        } else {
-          toast.show("Ошибка входа. Проверьте данные.");
+          userMsg = "Too many attempts. Try again later.";
+        } else if (msg.includes("auth/invalid-email")) {
+          userMsg = "Invalid email address.";
+        } else if (msg.includes("auth/network-request-failed")) {
+          userMsg = "Network error. Try again.";
         }
+        toast.show(userMsg);
+        return userMsg;
       }
     },
     [toast, router]
   );
 
-  const signUpWithEmail = useCallback(
-    async (email: string, password: string) => {
+  const sendPasswordReset = useCallback(
+    async (email: string): Promise<string | null> => {
       if (!auth) {
-        toast.show("Auth is not configured.");
-        return;
+        const m = "Auth is not configured.";
+        toast.show(m);
+        return m;
       }
       try {
-        const res = await createUserWithEmailAndPassword(auth, email, password);
-        await sendEmailVerification(res.user);
-        toast.show("Мы отправили письмо для подтверждения. Проверьте почту.");
-        router.push("/verify-email");
+        await sendPasswordResetEmail(auth, email);
+        toast.show("If an account exists, we sent a reset link to that email.");
+        return null;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
+        let userMsg = "Could not send reset email.";
+        if (msg.includes("auth/invalid-email")) userMsg = "Invalid email address.";
+        else if (msg.includes("auth/user-not-found")) userMsg = "If an account exists, we sent a reset link to that email.";
+        toast.show(userMsg);
+        return userMsg;
+      }
+    },
+    [toast]
+  );
+
+  const signUpWithEmail = useCallback(
+    async (email: string, password: string): Promise<string | null> => {
+      if (typeof window !== "undefined") {
+        console.log("[register] submit", { email: email ? `${email.slice(0, 3)}***` : "" });
+      }
+      if (!auth) {
+        const m = "Auth is not configured.";
+        toast.show(m);
+        return m;
+      }
+      try {
+        if (typeof window !== "undefined") console.log("[register] creating user...");
+        const res = await createUserWithEmailAndPassword(auth, email, password);
+        if (typeof window !== "undefined") console.log("[register] created uid", res.user.uid);
+        if (typeof window !== "undefined") console.log("[register] sending verification...");
+        await sendEmailVerification(res.user);
+        if (typeof window !== "undefined") console.log("[register] verification sent");
+        toast.show("We sent a verification email. Check your inbox (and spam).");
+        router.push("/verify-email");
+        return null;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (typeof window !== "undefined") console.error("[register] error", e);
+        let userMsg = "Registration failed. Check your details.";
         if (msg.includes("auth/email-already-in-use")) {
-          toast.show("Этот email уже зарегистрирован. Войдите или восстановите пароль.");
+          userMsg = "This email is already registered. Sign in or reset your password.";
         } else if (msg.includes("auth/weak-password")) {
-          toast.show("Пароль слишком короткий. Используйте минимум 6 символов.");
-        } else {
-          toast.show("Ошибка регистрации. Проверьте данные.");
+          userMsg = "Password is too short. Use at least 6 characters.";
+        } else if (msg.includes("auth/invalid-email")) {
+          userMsg = "Invalid email address.";
+        } else if (msg.includes("auth/operation-not-allowed") || msg.includes("auth/configuration-not-found")) {
+          userMsg = "Email sign-up is disabled.";
+        } else if (msg.includes("auth/network-request-failed") || msg.includes("auth/network-error")) {
+          userMsg = "Network error. Try again.";
         }
+        toast.show(userMsg);
+        return userMsg;
       }
     },
     [toast, router]
@@ -161,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    sendPasswordReset,
     resendVerificationEmail,
     signOut,
   };
@@ -176,8 +238,9 @@ export function useAuth(): AuthContextValue {
       loading: false,
       isVerified: false,
       signInWithGoogle: async () => {},
-      signInWithEmail: async () => {},
-      signUpWithEmail: async () => {},
+      signInWithEmail: async () => null,
+      signUpWithEmail: async () => null,
+      sendPasswordReset: async () => null,
       resendVerificationEmail: async () => {},
       signOut: async () => {},
     };

@@ -43,11 +43,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    return {
-      show: (msg: string) => {
-        if (typeof window !== "undefined") console.log("[Toast]", msg);
-      },
-    };
+    return { show: () => {} };
   }
   return ctx;
 }
